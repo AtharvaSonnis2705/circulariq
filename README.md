@@ -2,7 +2,7 @@
 
 > Ask questions about SEBI regulations and get answers that cite the exact paragraph and page of the master circular they come from.
 
-**Live demo:** _coming soon_ · **Video:** _coming soon_ · ![CI](https://github.com/AtharvaSonnis2705/circulariq/actions/workflows/ci.yml/badge.svg)
+**[Live demo](https://circulariq.vercel.app)** · **Video:** _coming soon_ · ![CI](https://github.com/AtharvaSonnis2705/circulariq/actions/workflows/ci.yml/badge.svg)
 
 ## The problem
 
@@ -44,6 +44,7 @@ Every number below was measured on this corpus, not estimated.
 | Reranking | "TER limits for equity MF schemes": correct section moved from #8 (hybrid) to #1 (reranked) |
 | Answer citation coverage (4 questions) | Haiku 5.5: 44% of answer text cited · **Sonnet 5.5: 86%** |
 | Time to first token | Haiku 5.5: 3.4 s · **Sonnet 5.5: 1.0 s** |
+| Retrieval latency (deployed, Render Ohio ↔ Neon us-east-2) | ~0.45 s: embed ~130 ms · hybrid search ~50 ms · rerank ~260 ms |
 | Cost per answer | Haiku 5.5: $0.0013 · Sonnet 5.5: $0.022 (Voyage within free tier) |
 | Ingestion | ~1.9M embedding tokens for the full corpus; unchanged chunks reuse stored vectors on re-ingest |
 
@@ -74,7 +75,7 @@ Tests: `cd api && uv run pytest` · `cd web && pnpm test`
 
 - [x] Ingestion, chunking, hybrid retrieval, reranking
 - [x] Streaming cited answers, Next.js UI
-- [ ] Deploy (Render + Vercel)
+- [x] Deploy (Render + Vercel)
 - [ ] Eval suite in CI: golden set, recall@k / MRR, LLM-judge faithfulness, citation accuracy; Langfuse tracing
 - [ ] MCP server so Claude Desktop can query CircularIQ
 - [ ] "What changed?": compare a new circular with the master circular it amends

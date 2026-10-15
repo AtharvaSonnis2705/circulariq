@@ -1,0 +1,43 @@
+[project]
+name = "circulariq"
+version = "0.1.0"
+description = "CircularIQ API: citation-grounded Q&A over SEBI circulars."
+readme = "README.md"
+authors = [
+    { name = "AtharvaSonnis", email = "atharvasonnis@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=1.14.0",
+    "beautifulsoup4>=4.15.0",
+    "fastapi>=0.143.1",
+    "httpx>=0.28.1",
+    "pgvector>=0.5.1",
+    "psycopg[binary]>=3.3.6",
+    "pydantic-settings>=2.16.0",
+    "pymupdf>=1.28.2",
+    "uvicorn[standard]>=0.54.0",
+    "voyageai>=0.5.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.12.5,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "ruff>=0.17.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "ASYNC"]
+ignore = ["E501"]  # the formatter owns line length; long SQL/URLs are fine
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

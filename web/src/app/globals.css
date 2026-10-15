@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f7f7f5;
+  --surface: #ffffff;
+  --foreground: #1a1a1a;
+  --muted: #5f6368;
+  --border: #e3e3df;
+  --accent: #1f4e8c;
+  --accent-soft: #e8eef7;
+  --highlight: #fff4d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #111214;
+    --surface: #1a1c1f;
+    --foreground: #ececec;
+    --muted: #a0a4a8;
+    --border: #2c2f33;
+    --accent: #8db4ec;
+    --accent-soft: #1d2a3d;
+    --highlight: #3a3220;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-highlight: var(--highlight);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Answer prose: readable defaults without a typography plugin. */
+.answer p {
+  margin: 0 0 0.75rem;
+}
+.answer ul,
+.answer ol {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+}
+.answer ul {
+  list-style: disc;
+}
+.answer ol {
+  list-style: decimal;
+}
+.answer li {
+  margin: 0.3rem 0;
+}
+.answer strong {
+  font-weight: 600;
+}
+.answer > :last-child {
+  margin-bottom: 0;
+}

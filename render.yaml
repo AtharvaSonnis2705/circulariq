@@ -1,0 +1,23 @@
+# Render Blueprint: Render dashboard → New → Blueprint → pick this repo.
+services:
+  - type: web
+    name: circulariq-api
+    runtime: docker
+    plan: free
+    region: ohio # same AWS region as the Neon database (us-east-2)
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: APP_NAME
+        value: circulariq-api
+      - key: CORS_ORIGINS
+        sync: false # set to your Vercel URL in the dashboard
+      - key: DATABASE_URL
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: VOYAGE_API_KEY
+        sync: false

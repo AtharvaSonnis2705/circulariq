@@ -12,6 +12,7 @@ dependencies = [
     "beautifulsoup4>=4.15.0",
     "fastapi>=0.143.1",
     "httpx>=0.28.1",
+    "langfuse>=5.0.1",
     "pgvector>=0.5.1",
     "psycopg[binary]>=3.3.6",
     "pydantic-settings>=2.16.0",
@@ -41,3 +42,4 @@ ignore = ["E501"]  # the formatter owns line length; long SQL/URLs are fine
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["."]  # lets tests import the evals/ scripts

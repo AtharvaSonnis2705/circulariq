@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
+import Link from "next/link";
+
 import { Answer } from "@/components/Answer";
 import { SourceList } from "@/components/SourceList";
 import { type AskEvent, type Source, type Stats, askStream, fetchStats } from "@/lib/api";
@@ -89,7 +91,12 @@ export function Chat() {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:py-12">
       <header className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">CircularIQ</h1>
+        <div className="flex items-baseline justify-between gap-4">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">CircularIQ</h1>
+          <Link href="/evals" className="text-sm text-accent hover:underline">
+            How well does it work? →
+          </Link>
+        </div>
         <p className="mt-1.5 max-w-2xl text-muted">
           Ask about SEBI regulations. Every answer cites the exact paragraph and page of the master
           circular it comes from.

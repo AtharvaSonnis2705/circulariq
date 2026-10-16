@@ -20,10 +20,12 @@ from circulariq.search import Hit, hybrid_search
 
 CANDIDATES = 30
 TOP_K = 6
-# Below this rerank score the passage is unlikely to answer the question. First calibration
-# (2026-10-15): 8 on-topic SEBI questions scored 0.71–0.93; 6 off-topic ones 0.25–0.67
-# (the 0.67 was "RBI KYC norms", near SEBI KYC content, so the prompt handles that case).
-MIN_RELEVANCE = 0.60
+# Below this rerank score the passage is unlikely to answer the question. Set from the golden-set
+# sweep (evals/run_retrieval.py, 2026-10-16, 63 answerable + 10 unanswerable questions): at 0.50
+# no answerable question is refused, while 0.60 refused two user-phrased ones (0.54, 0.59).
+# Off-topic questions all scored ≤ 0.46. Two near-topic negatives (RBI KYC 0.67, TER caps 0.65)
+# pass at any cutoff that keeps real questions, so the prompt's refusal rule handles them.
+MIN_RELEVANCE = 0.50
 
 
 @dataclass

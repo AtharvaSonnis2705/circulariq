@@ -21,3 +21,9 @@ services:
         sync: false
       - key: VOYAGE_API_KEY
         sync: false
+      - key: LANGFUSE_PUBLIC_KEY # optional; tracing is off when unset
+        sync: false
+      - key: LANGFUSE_SECRET_KEY
+        sync: false
+      - key: LANGFUSE_HOST
+        sync: false

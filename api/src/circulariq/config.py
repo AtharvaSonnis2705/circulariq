@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # Requests per minute, same idea (free tier without a card allows only a few). 0 = no throttle.
     voyage_rpm: int = 0
 
+    # Optional Langfuse tracing; tracing is a no-op unless both keys are set.
+    langfuse_public_key: str = Field(default="", repr=False)
+    langfuse_secret_key: str = Field(default="", repr=False)
+    langfuse_host: str = "https://cloud.langfuse.com"
+
     # Local working directory for downloaded PDFs, manifest and parsed chunks (git-ignored).
     data_dir: Path = Path("data")
 

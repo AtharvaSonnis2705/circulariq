@@ -29,26 +29,51 @@ CircularIQ answers only from the SEBI documents currently in force, and every cl
 - **Only rules in force.** When a newer master circular on the same topic rescinds an older one, the old version is marked superseded and excluded from answers. It's kept for future "what changed?" queries.
 - **Hybrid retrieval.** Keyword search catches exact terms ("Regulation 54", "REF"). Vector search catches paraphrases. Reciprocal rank fusion merges the two without tuning weights, and a cross-encoder reranker picks the final six.
 - **API-native citations.** Passages go to Claude as `search_result` content blocks, so citations come back from the API and are tied to real passages. The model can't invent a reference.
-- **Guardrails.** A calibrated rerank-score threshold answers off-topic questions with "not found" before any LLM call. The prompt tells the model to state what the excerpts don't cover instead of guessing.
+- **Guardrails.** A rerank-score cutoff, tuned on the golden set, answers off-topic questions with "not found" before any LLM call. The prompt tells the model to state what the excerpts don't cover instead of guessing.
+- **Observability.** Optional Langfuse tracing records each question's retrieval scores and timings, the model that answered, tokens, cost and time to first token. When it is on, the questions people type are stored in Langfuse.
 - **Cost-aware model routing.** Sonnet 5.5 writes answers until a daily budget, then Haiku 5.5 takes over. Sonnet calls opt into server-side refusal fallbacks. Per-IP and global rate limits cap spend on the public demo.
 
-## Results so far
+## Results
 
-Every number below was measured on this corpus, not estimated.
+Every number below comes from the scripts in [`api/evals/`](api/evals), run against a hand-checked golden set of **73 questions**: 63 answerable (including 10 phrased like a real user, with no wording copied from the circulars, and 6 that need two passages), plus 10 that should be refused (off-topic, or not covered by SEBI's documents). Full results, including every failure: **[circulariq.vercel.app/evals](https://circulariq.vercel.app/evals)**.
+
+**Retrieval** (63 answerable questions, $0: Voyage + Postgres only, re-run in CI on every push)
+
+| Search | Recall@1 | Recall@5 | Recall@10 | MRR |
+|---|---|---|---|---|
+| Keyword only | 19% | 44% | 55% | 0.31 |
+| Vector only | 60% | 92% | 97% | 0.76 |
+| Hybrid (RRF) | 42% | 71% | 91% | 0.57 |
+| **Hybrid + rerank (production)** | **79%** | **100%** | **100%** | **0.91** |
+
+**Answers** (judged by Sonnet 5.5 against the exact passages each answer was given)
+
+| | Sonnet 5.5 | Haiku 5.5 |
+|---|---|---|
+| Faithfulness (claims supported by the passages) | 95% | 96% |
+| Citation support (citations that back their sentence) | 99.8% | 99.4% |
+| Expected facts present | 100% | 98% |
+| Share of answer text carrying a citation | 58% | 32% |
+| Unanswerable questions correctly refused | 10/10 | 10/10 |
+| Answerable questions wrongly refused | 0/63 | 0/63 |
+| Cost per answer | $0.019 | $0.0012 |
+
+The answer run cost $3.81 including grading. Pass rate and faithfulness are a **lower bound**: in this run the judge wasn't shown the passages' issue dates, so correct mentions of a circular's date counted as unsupported (fixed for the next run). The remaining failures are small overreaches, like an inferred notch count or an unstated trigger level. They're listed on the evals page.
+
+**Other measurements**
 
 | What | Result |
 |---|---|
 | Corpus | 52 SEBI documents in force (28 master circulars, 24 circulars), 4,922 pages, 4,453 passages |
-| Retrieval spot-check | 8/8 on-topic questions retrieved the correct section as the #1 passage after reranking |
-| Off-topic gate | On-topic top scores 0.71–0.93 vs off-topic 0.25–0.67, so the threshold is set at 0.60 |
-| Reranking | "TER limits for equity MF schemes": correct section moved from #8 (hybrid) to #1 (reranked) |
-| Answer citation coverage (4 questions) | Haiku 5.5: 44% of answer text cited · **Sonnet 5.5: 86%** |
 | Time to first token | Haiku 5.5: 3.4 s · **Sonnet 5.5: 1.0 s** |
 | Retrieval latency (deployed, Render Ohio ↔ Neon us-east-2) | ~0.45 s: embed ~130 ms · hybrid search ~50 ms · rerank ~260 ms |
-| Cost per answer | Haiku 5.5: $0.0013 · Sonnet 5.5: $0.022 (Voyage within free tier) |
 | Ingestion | ~1.9M embedding tokens for the full corpus; unchanged chunks reuse stored vectors on re-ingest |
 
-A full evaluation (golden Q&A set, recall@k, faithfulness, citation accuracy, run in CI) is next. See the roadmap below.
+What the evals changed:
+- **The reranker does the heavy lifting.** Hybrid search alone ranks worse than vector search alone (the keyword OR-query adds noise), but it widens the candidate pool and the reranker sorts it: 71% → 100% recall@5.
+- **The "not found" cutoff dropped from 0.60 to 0.50.** At 0.60, two real questions were refused. At 0.50, none are, and every off-topic question (top score ≤ 0.46) is still stopped before the model.
+
+Run them yourself: `cd api && uv run python -m evals.run_retrieval` (free) · `uv run python -m evals.run_answers` (~$4).
 
 ## Key decisions and trade-offs
 
@@ -76,12 +101,12 @@ Tests: `cd api && uv run pytest` · `cd web && pnpm test`
 - [x] Ingestion, chunking, hybrid retrieval, reranking
 - [x] Streaming cited answers, Next.js UI
 - [x] Deploy (Render + Vercel)
-- [ ] Eval suite in CI: golden set, recall@k / MRR, LLM-judge faithfulness, citation accuracy; Langfuse tracing
+- [x] Eval suite: golden set, recall@k / MRR with ablations (CI-gated), LLM-judge faithfulness and citation support, public `/evals` page; Langfuse tracing
 - [ ] MCP server so Claude Desktop can query CircularIQ
 - [ ] "What changed?": compare a new circular with the master circular it amends
 
 ## Tech
 
-Python 3.12 · FastAPI · psycopg 3 · Postgres (Neon) + pgvector · Voyage AI (voyage-4, rerank-3) · Claude Sonnet 5.5 / Haiku 5.5 · Next.js 16 · React 19 · Tailwind 4 · Docker · GitHub Actions
+Python 3.12 · FastAPI · psycopg 3 · Postgres (Neon) + pgvector · Voyage AI (voyage-4, rerank-3) · Claude Sonnet 5.5 / Haiku 5.5 · Langfuse · Next.js 16 · React 19 · Tailwind 4 · Docker · GitHub Actions
 
 _Information, not legal advice. Always check the linked source._

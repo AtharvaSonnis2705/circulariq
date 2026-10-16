@@ -1,5 +1,6 @@
 import json
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager
 
 import psycopg
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -13,10 +14,19 @@ from circulariq.db import connect
 from circulariq.ratelimit import SlidingWindowLimiter
 from circulariq.retrieval import retrieve
 from circulariq.router import BudgetRouter
+from circulariq.tracing import AskTrace
+from circulariq.tracing import shutdown as shutdown_tracing
 
 settings = get_settings()
 
-app = FastAPI(title=settings.app_name)
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    yield
+    shutdown_tracing()  # flush any traces still queued
+
+
+app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -107,14 +117,18 @@ def ask(body: AskRequest, request: Request) -> StreamingResponse:
     if message := limiter.check(client_id(request)):
         raise HTTPException(status_code=429, detail=message)
     question = body.question.strip()
+    trace = AskTrace(question)
+    trace.start_retrieval()
     try:
         with connect() as conn:
             result = retrieve(conn, question)
     except (RuntimeError, psycopg.Error) as e:
         raise HTTPException(status_code=503, detail="Database unavailable") from e
+    trace.end_retrieval(result)
     model = router.pick() if result.answerable else settings.model_fast
+    events = trace.wrap(stream_answer(result, model=model), model, calls_model=result.answerable)
     return StreamingResponse(
-        _sse(stream_answer(result, model=model)),
+        _sse(events),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
